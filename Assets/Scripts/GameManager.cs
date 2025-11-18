@@ -38,7 +38,7 @@ public class GameManager : MonoBehaviour
         }
         else
         {
-            mouseWorldPosition = new Vector3 (50, -10, 50);
+            mouseWorldPosition = new Vector3 (-50, -10, -50);
             rayBoard = false;
         }
         
@@ -95,7 +95,7 @@ public class GameManager : MonoBehaviour
             temp.z = temp.z * 10;
         }
 
-        cellIndicator.transform.position = new Vector3(temp.x, temp.y, temp.z);
+        cellIndicator.transform.position = new Vector3(temp.x,.1f, temp.z);
 
     }
 }
