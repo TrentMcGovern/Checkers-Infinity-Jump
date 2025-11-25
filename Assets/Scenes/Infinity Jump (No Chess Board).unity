@@ -543,7 +543,6 @@ GameObject:
   - component: {fileID: 1417511924}
   - component: {fileID: 1417511923}
   - component: {fileID: 1417511922}
-  - component: {fileID: 1417511921}
   m_Layer: 0
   m_Name: Checker
   m_TagString: Untagged
@@ -551,24 +550,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &1417511921
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1417511920}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 1ff7e9e9e42709a4b9865552dc9ebe36, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  cellIndicator: {fileID: 1593991142}
-  boardGrid: {fileID: 336602387}
-  gameCamera: {fileID: 1255040915}
-  boardPlaneLayer:
-    serializedVersion: 2
-    m_Bits: 8
 --- !u!136 &1417511922
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -669,6 +650,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1506514359}
+  - component: {fileID: 1506514360}
   m_Layer: 0
   m_Name: GridParent
   m_TagString: Untagged
@@ -692,6 +674,27 @@ Transform:
   - {fileID: 336602386}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1506514360
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1506514358}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1ff7e9e9e42709a4b9865552dc9ebe36, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  cellIndicator: {fileID: 1593991142}
+  PlayerCheckers:
+  - {fileID: 1417511920}
+  activeChecker: {fileID: 0}
+  boardGrid: {fileID: 336602387}
+  gameCamera: {fileID: 1255040915}
+  boardPlaneLayer:
+    serializedVersion: 2
+    m_Bits: 8
 --- !u!1 &1593991142 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 4384956190022858163, guid: 115cae7446a63b84abba1aa1a0c14f77, type: 3}

@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 public class GameManager : MonoBehaviour
 {
@@ -8,6 +9,18 @@ public class GameManager : MonoBehaviour
 
     [SerializeField]
     private GameObject cellIndicator;
+
+    private GridManager gridManager;
+
+    private int rowCount;
+    private int columnCount;
+
+    //Array that contains all the checkers the player has at their disposal
+    [SerializeField]
+    public GameObject[] PlayerCheckers;
+
+    //The checker the player currently wants to move
+    [SerializeField] private GameObject activeChecker;
 
     [SerializeField]
     private Grid boardGrid;
@@ -52,18 +65,57 @@ public class GameManager : MonoBehaviour
 
     void Start()
     {
-        
+        gridManager = new GridManager();
+        gridManager.readCSV("CheckerGrid.csv");
+        rowCount = gridManager.getDimensions().row;
+        columnCount = gridManager.getDimensions().col;
+        createBoard();
     }
+
+
+
+    void createBoard()
+    {
+        for( int i = 0; i < rowCount; i++ )
+        {
+            for( int j = 0; j < columnCount; j++)
+            {
+               char gridItem = gridManager.getGridValue(i, j);
+                Debug.Log(gridItem);
+                if(gridItem == 'P')
+                {
+                    Debug.Log("P");
+                    PlayerCheckers[0].transform.position = new Vector3((j+1)*10+5, 0, (i+1)*10+5);
+                    Debug.Log(PlayerCheckers[0].transform.position);
+                    
+                }
+
+            }
+
+        }
+
+
+    }
+
+
+
+
 
     // Update is called once per frame
     void Update()
     {
 
-
-        if(Input.GetMouseButtonDown(0) && rayBoard)
+        if (Input.GetMouseButtonDown(0))
         {
-            gameObject.transform.position = new Vector3(cellIndicator.transform.position.x + 5f, cellIndicator.transform.position.y, cellIndicator.transform.position.z + 5f);
-            Debug.Log("GAMER");
+            //PlayerCheckers[0].transform.position = new Vector3(cellIndicator.transform.position.x + 5f, cellIndicator.transform.position.y, cellIndicator.transform.position.z + 5f);
+            Debug.Log(boardGrid.GetCellCenterWorld(boardGrid.WorldToCell(cellIndicator.transform.position)));
+        }
+
+        if (Input.GetMouseButtonDown(0) && rayBoard)
+        {
+            PlayerCheckers[0].transform.position = new Vector3(cellIndicator.transform.position.x + 5f, cellIndicator.transform.position.y, cellIndicator.transform.position.z + 5f);
+            //Debug.Log(boardGrid.WorldToCell(PlayerCheckers[0].transform.position));
+            //Debug.Log("GAMER");
         }
 
 
@@ -96,6 +148,6 @@ public class GameManager : MonoBehaviour
         }
 
         cellIndicator.transform.position = new Vector3(temp.x, temp.y, temp.z);
-
+ 
     }
 }
