@@ -171,7 +171,10 @@ public class GameManager : MonoBehaviour
     void Update()
     {
 
-        if (Input.GetMouseButtonDown(0))
+
+        if (Input.GetKeyDown(KeyCode.Escape)) Application.Quit();
+
+            if (Input.GetMouseButtonDown(0))
         {
             //PlayerCheckers[0].transform.position = new Vector3(cellIndicator.transform.position.x + 5f, cellIndicator.transform.position.y, cellIndicator.transform.position.z + 5f);
             Debug.Log("BOARD COORDINATES: " + boardGrid.GetCellCenterWorld(boardGrid.WorldToCell(cellIndicator.transform.position)));
