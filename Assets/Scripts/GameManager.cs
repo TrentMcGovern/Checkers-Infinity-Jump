@@ -1,4 +1,5 @@
 using System;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -6,6 +7,8 @@ public class GameManager : MonoBehaviour
 {
     //Bool that tells us if we are hovering over the board, and determining whether or not we can move the piece
     private bool rayBoard;
+
+    private bool canMove;
 
     [SerializeField]
     private GameObject cellIndicator;
@@ -89,6 +92,13 @@ public class GameManager : MonoBehaviour
                     Debug.Log(PlayerCheckers[0].transform.position);
                     
                 }
+                if (gridItem == 'X')
+                {
+                    Debug.Log("X");
+                    PlayerCheckers[1].transform.position = new Vector3((j + 1) * 10 + 5, 0, (i + 1) * 10 + 5);
+                    Debug.Log(PlayerCheckers[1].transform.position);
+
+                }
 
             }
 
@@ -97,8 +107,64 @@ public class GameManager : MonoBehaviour
 
     }
 
+    private bool checkMoveLegality(int playerRow, int playerCol, int targetRow, int targetCol, bool kingStatus)
+    {
+        //If the chosen checker is not a king, then we can immediately flag it as invalid if the chosen spot is behind
+        if( !kingStatus && targetRow < playerRow) return false;
+            Debug.Log (targetRow + "  " +  targetCol + " TEST: " + (playerRow - 1) % 8);  
+       
+            if( targetCol==playerCol+1 && targetRow == playerRow + 1 && gridManager.getGridValue(targetRow, targetCol) == '\0') {
+                return true;
+            }
+            if (targetCol == playerCol + 1 && targetRow == playerRow - 1 && gridManager.getGridValue(targetRow, targetCol) == '\0')
+            {
+                return true;
+            }
+            if (targetCol == playerCol - 1 && targetRow == playerRow + 1 && gridManager.getGridValue(targetRow, targetCol) == '\0')
+            {
+                return true;
+            }
+            if (targetCol == playerCol - 1 && targetRow == playerRow - 1 && gridManager.getGridValue(targetRow, targetCol) == '\0')
+            {
+                return true;
+            }
 
 
+        if (targetCol == playerCol + 2 && targetRow == playerRow + 2 && playerCol != 7 && playerRow != 7)
+        {
+            if(gridManager.getGridValue(playerRow + 1, playerCol + 1) == 'X') return true;
+        }
+        if (targetCol == playerCol + 2 && targetRow == playerRow - 2 && playerCol != 7 && playerRow != 0)
+        {
+            if (gridManager.getGridValue(playerRow - 1, playerCol + 1) == 'X') return true;
+           
+        }
+        if (targetCol == playerCol - 2 && targetRow == playerRow + 2 && playerCol != 0 && playerRow != 7)
+        {
+            if (gridManager.getGridValue(playerRow + 1, playerCol - 1) == 'X') return true;
+          
+        }
+        if (targetCol == playerCol - 2 && targetRow == playerRow - 2 && playerCol != 0 && playerRow != 0)
+        {
+            if (gridManager.getGridValue(playerRow - 1, playerCol - 1) == 'X') return true;
+        }
+
+
+
+
+
+        return false;
+    }
+
+
+    private int boardToGrid(float coordinate)
+    {
+
+        coordinate = ((int)coordinate - 5) / 10 - 1 ;
+   
+
+        return (int)coordinate;
+    }
 
 
     // Update is called once per frame
@@ -108,10 +174,12 @@ public class GameManager : MonoBehaviour
         if (Input.GetMouseButtonDown(0))
         {
             //PlayerCheckers[0].transform.position = new Vector3(cellIndicator.transform.position.x + 5f, cellIndicator.transform.position.y, cellIndicator.transform.position.z + 5f);
-            Debug.Log(boardGrid.GetCellCenterWorld(boardGrid.WorldToCell(cellIndicator.transform.position)));
+            Debug.Log("BOARD COORDINATES: " + boardGrid.GetCellCenterWorld(boardGrid.WorldToCell(cellIndicator.transform.position)));
+
+           
         }
 
-        if (Input.GetMouseButtonDown(0) && rayBoard)
+        if (Input.GetMouseButtonDown(0) && rayBoard && canMove)
         {
             PlayerCheckers[0].transform.position = new Vector3(cellIndicator.transform.position.x + 5f, cellIndicator.transform.position.y, cellIndicator.transform.position.z + 5f);
             //Debug.Log(boardGrid.WorldToCell(PlayerCheckers[0].transform.position));
@@ -148,6 +216,17 @@ public class GameManager : MonoBehaviour
         }
 
         cellIndicator.transform.position = new Vector3(temp.x, temp.y, temp.z);
- 
+      
+
+        if (checkMoveLegality(boardToGrid(PlayerCheckers[0].transform.position.z), boardToGrid(PlayerCheckers[0].transform.position.x),boardToGrid(cellIndicator.transform.position.z+5f), boardToGrid(cellIndicator.transform.position.x+5f), false))
+        {
+            cellIndicator.transform.GetChild(0).gameObject.GetComponent<Renderer>().material.color = Color.green;
+            canMove = true;
+        }
+        else
+        {
+            cellIndicator.transform.GetChild(0).gameObject.GetComponent<Renderer>().material.color = Color.red;
+            canMove = false;
+        }
     }
 }
