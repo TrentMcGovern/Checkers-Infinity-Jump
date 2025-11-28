@@ -27,6 +27,12 @@ public class GridManager
         return gridMap[r, c];
     }
 
+    public void updateGridValue(int r, int c, char newValue)
+    {
+
+        gridMap[r, c] = newValue;
+    }
+
     public void readCSV(string csvName) {
 
 
