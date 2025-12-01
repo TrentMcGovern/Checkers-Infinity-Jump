@@ -54,7 +54,10 @@ public class GameManager : MonoBehaviour
     [SerializeField]
     private LayerMask boardPlaneLayer;
 
-
+    private void Awake()
+    {
+        DontDestroyOnLoad(gameObject);
+    }
 
     void Start()
     {
