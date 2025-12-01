@@ -11,6 +11,9 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/Infinity Jump (No Chess Board).unity
     guid: 20b6d19b5287e9841b6716e2dd665830
+  - enabled: 1
+    path: Assets/Scenes/Victory.unity
+    guid: 64a08b64f229abb4f9c662123341d596
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   m_UseUCBPForAssetBundles: 0

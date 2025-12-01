@@ -62,9 +62,9 @@ public class GridManager
                     {
 
                         //Debug.Log("GRID COORDINATES: " + i + ", " + j);
-                        if (dataArray[j] == "")
+                        if (dataArray[j] == "0")
                         {
-                            gridMap[i, j] = '\0';
+                            gridMap[i, j] = '0';
                         }
                         else
                         {
