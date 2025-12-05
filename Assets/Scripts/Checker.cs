@@ -4,6 +4,9 @@ public class Checker : MonoBehaviour
 {
     private bool isEnemy;
 
+    public int originalRow = -1;
+    public int originalCol = -1;  
+
     [SerializeField]
     private bool isKing;
     public bool IsKing
@@ -38,6 +41,13 @@ public class Checker : MonoBehaviour
     public bool getIsEnemy()
     {
         return isEnemy;
+    }
+
+    public void setCoordinates(int row, int col)
+    {
+       
+
+        originalRow = row; originalCol = col;
     }
 
  

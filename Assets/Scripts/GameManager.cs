@@ -4,9 +4,19 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using System.Collections.Generic;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
+using TMPro;
 
 public class GameManager : MonoBehaviour
 {
+
+    //int to track the player health
+    public int health;
+    public TMP_Text healthText;
+    //int to track the player's remaining turns
+    public int turns;
+    public TMP_Text turnsText;
+
     //Bool that tells us if we are hovering over the board, and determining whether or not we can move the piece
     private bool rayBoard;
 
@@ -33,6 +43,10 @@ public class GameManager : MonoBehaviour
 
     [SerializeField]
     public Checker checkerPrefab;
+
+    [SerializeField]
+    public GameObject hazardPrefab;
+
   
 
 
@@ -54,10 +68,7 @@ public class GameManager : MonoBehaviour
     [SerializeField]
     private LayerMask boardPlaneLayer;
 
-    private void Awake()
-    {
-        DontDestroyOnLoad(gameObject);
-    }
+  
 
     void Start()
     {
@@ -67,7 +78,12 @@ public class GameManager : MonoBehaviour
         columnCount = gridManager.getDimensions().col;
         playerCheckers = new Dictionary<string, Checker>();
         enemyCheckers = new Dictionary<string, Checker>();
-        
+        health = 3;
+        turns = 5;
+
+        healthText.text = "Health: " + health;
+        turnsText.text = "Turns: " + turns;
+
          Debug.Log(playerCheckers.Count);
         createBoard();
     }
@@ -83,6 +99,12 @@ public class GameManager : MonoBehaviour
             SceneManager.LoadScene(1);
         }
 
+        if (turns == 0)
+        {
+
+            SceneManager.LoadScene(2);
+        }
+
         //Press Escape to exit
         if (Input.GetKeyDown(KeyCode.Escape)) Application.Quit();
 
@@ -95,10 +117,39 @@ public class GameManager : MonoBehaviour
         //If the player clicks on the board, move the checker to that position if this is a valid checker
         if (Input.GetMouseButtonDown(0) && rayBoard && canMove && checkerIsActive)
         {
+
+            
             gridManager.updateGridValue(boardToGrid(activeChecker.transform.position.z), boardToGrid(activeChecker.transform.position.x), '0');
-            activeChecker.gameObject.transform.position = new Vector3(cellIndicator.transform.position.x + 5f, cellIndicator.transform.position.y, cellIndicator.transform.position.z + 5f);
+            Debug.Log("GAMER: " + boardToGrid(cellIndicator.transform.position.z))
+;            if (gridManager.getGridValue(boardToGrid(cellIndicator.transform.position.z+5f), boardToGrid(cellIndicator.transform.position.x + 5f)) == 'H')
+            {
+                health--;
+                healthText.text = "Health: " + health;
+                activeChecker.gameObject.transform.position = new Vector3((activeChecker.originalCol + 1) * 10 + 5, 0, (activeChecker.originalRow + 1) * 10 + 5);
+            }
+            else
+            {
+                activeChecker.gameObject.transform.position = new Vector3(cellIndicator.transform.position.x + 5f, cellIndicator.transform.position.y, cellIndicator.transform.position.z + 5f);
+            }
             gridManager.updateGridValue(boardToGrid(activeChecker.transform.position.z), boardToGrid(activeChecker.transform.position.x), 'P');
-            if(hoppedCoordinate != "")
+            
+           
+
+            
+
+            //We need to check if the placed checker's position is in the final row, in which case, it needs to be kinged
+            if (boardToGrid(activeChecker.transform.position.z) == rowCount - 1)
+            {
+                activeChecker.IsKing = true;
+            }
+
+            if (adjustTurnCount(boardToGrid(activeChecker.transform.position.z), boardToGrid(activeChecker.transform.position.x)))
+            {
+                turns--;
+                turnsText.text = "Turns: " + turns;
+            }
+
+            if (hoppedCoordinate != "")
             {
                 Debug.Log(hoppedCoordinate);
                 gridManager.updateGridValue((int)(hoppedCoordinate[0] - '0'), (int)(hoppedCoordinate[1] - '0'), '0');
@@ -106,13 +157,14 @@ public class GameManager : MonoBehaviour
                 enemyCheckers.Remove(hoppedCoordinate);
                 hoppedCoordinate = "";
             }
-
+            //We need to check if the placed checker's position is in the final row, in which case, it needs to be kinged
             if (boardToGrid(activeChecker.transform.position.z) == rowCount-1)
             {
                 activeChecker.IsKing = true;
             }
-            //We need to check if the placed checker's position is in the final row, in which case, it needs to be kinged
+           
 
+           
         }
 
         //If the player clicks the board when there is no active checker, check if they are clicking on a checker
@@ -251,7 +303,8 @@ public class GameManager : MonoBehaviour
                     playerCheckers.Add((""+i) + ("" + j) , Instantiate(checkerPrefab, new Vector3(0, 0, 0), checkerPrefab.transform.rotation));
                     playerCheckers[("" + i) + ("" + j)].turnPlayer();
                     playerCheckers[("" + i) + ("" + j)].gameObject.transform.position = new Vector3((j + 1) * 10 + 5, 0, (i + 1) * 10 + 5);
-                    
+                    playerCheckers[("" + i) + ("" + j)].setCoordinates(i, j);
+
 
                 }
                 if (gridItem == 'X')
@@ -260,7 +313,17 @@ public class GameManager : MonoBehaviour
                     enemyCheckers.Add(("" + i) + ("" + j), Instantiate(checkerPrefab, new Vector3(0, 0, 0), checkerPrefab.transform.rotation));
                     enemyCheckers[("" + i) + ("" + j)].turnEnemy();
                     enemyCheckers[("" + i) + ("" + j)].gameObject.transform.position = new Vector3((j + 1) * 10 + 5, 0, (i + 1) * 10 + 5);
-                   
+                    enemyCheckers[("" + i) + ("" + j)].setCoordinates(i, j);
+
+                }
+
+                if (gridItem == 'H')
+                {
+                    Debug.Log("H");
+                    Instantiate(hazardPrefab, new Vector3((j + 1) * 10+5 , 5, (i + 1) * 10+5 ), hazardPrefab.transform.rotation);
+                    
+                    
+
 
                 }
 
@@ -289,41 +352,41 @@ public class GameManager : MonoBehaviour
         if (!kingStatus && targetRow < playerRow) return false;
         //Debug.Log(targetRow + "  " + targetCol + " TEST: " + (playerRow - 1) % 8);
 
-        if (targetCol == playerCol + 1 && targetRow == playerRow + 1 && gridManager.getGridValue(targetRow, targetCol) == '0')
+        if (targetCol == playerCol + 1 && targetRow == playerRow + 1 && gridManager.getGridValue(targetRow, targetCol) != 'X')
         {
             return true;
         }
-        if (targetCol == playerCol + 1 && targetRow == playerRow - 1 && gridManager.getGridValue(targetRow, targetCol) == '0')
+        if (targetCol == playerCol + 1 && targetRow == playerRow - 1 && gridManager.getGridValue(targetRow, targetCol) != 'X')
         {
             return true;
         }
-        if (targetCol == playerCol - 1 && targetRow == playerRow + 1 && gridManager.getGridValue(targetRow, targetCol) == '0')
+        if (targetCol == playerCol - 1 && targetRow == playerRow + 1 && gridManager.getGridValue(targetRow, targetCol) != 'X')
         {
             return true;
         }
-        if (targetCol == playerCol - 1 && targetRow == playerRow - 1 && gridManager.getGridValue(targetRow, targetCol) == '0')
+        if (targetCol == playerCol - 1 && targetRow == playerRow - 1 && gridManager.getGridValue(targetRow, targetCol) != 'X')
         {
             return true;
         }
 
 
-        if (targetCol == playerCol + 2 && targetRow == playerRow + 2 && playerCol != 7 && playerRow != 7)
+        if (targetCol == playerCol + 2 && targetRow == playerRow + 2 && playerCol != 7 && playerRow != 7 )
         {
-            if (gridManager.getGridValue(playerRow + 1, playerCol + 1) == 'X') { hoppedCoordinate = (playerRow +1) + "" + (playerCol +1) + ""  ; return true; }
+            if (gridManager.getGridValue(playerRow + 1, playerCol + 1) == 'X' && gridManager.getGridValue(targetRow, targetCol) != 'X') { hoppedCoordinate = (playerRow +1) + "" + (playerCol +1) + ""  ; return true; }
         }
         if (targetCol == playerCol + 2 && targetRow == playerRow - 2 && playerCol != 7 && playerRow != 0)
         {
-            if (gridManager.getGridValue(playerRow - 1, playerCol + 1) == 'X') { hoppedCoordinate = (playerRow - 1) + "" + (playerCol + 1) + ""; return true; }
+            if (gridManager.getGridValue(playerRow - 1, playerCol + 1) == 'X' && gridManager.getGridValue(targetRow, targetCol) != 'X') { hoppedCoordinate = (playerRow - 1) + "" + (playerCol + 1) + ""; return true; }
 
         }
         if (targetCol == playerCol - 2 && targetRow == playerRow + 2 && playerCol != 0 && playerRow != 7)
         {
-            if (gridManager.getGridValue(playerRow + 1, playerCol - 1) == 'X') { hoppedCoordinate = (playerRow + 1) + "" + (playerCol - 1) + ""; return true; }
+            if (gridManager.getGridValue(playerRow + 1, playerCol - 1) == 'X' && gridManager.getGridValue(targetRow, targetCol) != 'X') { hoppedCoordinate = (playerRow + 1) + "" + (playerCol - 1) + ""; return true; }
 
         }
         if (targetCol == playerCol - 2 && targetRow == playerRow - 2 && playerCol != 0 && playerRow != 0)
         {
-            if (gridManager.getGridValue(playerRow - 1, playerCol - 1) == 'X') { hoppedCoordinate = (playerRow - 1) + "" + (playerCol - 1) + ""; return true; }
+            if (gridManager.getGridValue(playerRow - 1, playerCol - 1) == 'X' && gridManager.getGridValue(targetRow, targetCol) != 'X') { hoppedCoordinate = (playerRow - 1) + "" + (playerCol - 1) + ""; return true; }
         }
 
         return false;
@@ -341,6 +404,37 @@ public class GameManager : MonoBehaviour
 
 
         return (int)coordinate;
+    }
+
+    /// <summary>
+    /// Adjusts the number of turns each time the player makes the move (mostly checks to see if the player should lose a turn that move, or if they should keep one)
+    /// </summary>
+    /// <param name="playerRow">The row the player checker is in</param>
+    /// <param name="playerColumn">The column the player checker is in</param>
+    private bool adjustTurnCount(int playerRow, int playerCol)
+    {
+        if (hoppedCoordinate == "") { return true; }
+
+        if (playerCol != 7 && playerRow != 7)
+        {
+            if (gridManager.getGridValue(playerRow + 1, playerCol + 1) == 'X') { return false; }
+        }
+        if (playerCol != 7 && playerRow != 0)
+        {
+            if (gridManager.getGridValue(playerRow - 1, playerCol + 1) == 'X' && activeChecker.IsKing) { return false; }
+
+        }
+        if (playerCol != 0 && playerRow != 7)
+        {
+            if (gridManager.getGridValue(playerRow + 1, playerCol - 1) == 'X') { return false; }
+
+        }
+        if (playerCol != 0 && playerRow != 0)
+        {
+            if (gridManager.getGridValue(playerRow - 1, playerCol - 1) == 'X' && activeChecker.IsKing) { return false; }
+        }
+
+        return true;
     }
 
 }
