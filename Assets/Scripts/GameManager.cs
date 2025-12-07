@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 using TMPro;
+using NUnit.Framework.Constraints;
 
 public class GameManager : MonoBehaviour
 {
@@ -23,6 +24,9 @@ public class GameManager : MonoBehaviour
     //bool that tells us whether the position the player is attempting to move to (assuming they are) is valid, and 
     private bool canMove;
 
+    //Bool telling us whether or not we can teleoprt
+    private bool canTeleport = false;
+
     //Plane that indicates what cell the player is hovering over
     [SerializeField]
     private GameObject cellIndicator;
@@ -34,6 +38,10 @@ public class GameManager : MonoBehaviour
     private int rowCount;
     private int columnCount;
 
+    //The count of power up types - each power up will be mapped to an index in this array that contians the number of power ups
+    public int powerUpTypeCount=0;
+    private int[] powerupCounts;
+    public Button[] powerupButtons;
    
     private Dictionary<string, Checker> playerCheckers;
     private Dictionary<string, Checker> enemyCheckers;
@@ -79,13 +87,15 @@ public class GameManager : MonoBehaviour
         playerCheckers = new Dictionary<string, Checker>();
         enemyCheckers = new Dictionary<string, Checker>();
         health = 3;
-        turns = 5;
+        turns = 50;
+        powerupCounts = new int[powerUpTypeCount];
 
         healthText.text = "Health: " + health;
         turnsText.text = "Turns: " + turns;
 
          Debug.Log(playerCheckers.Count);
         createBoard();
+        for (int i = 0; i < powerupButtons.Length; i++) { int capturedIterator = i; powerupCounts[capturedIterator] = 1; powerupButtons[capturedIterator].onClick.AddListener(()=>powerUp(capturedIterator)); powerupButtons[capturedIterator].gameObject.SetActive(false); }
     }
 
 
@@ -99,7 +109,7 @@ public class GameManager : MonoBehaviour
             SceneManager.LoadScene(1);
         }
 
-        if (turns == 0)
+        if (turns == 0 || health == 0)
         {
 
             SceneManager.LoadScene(2);
@@ -113,6 +123,13 @@ public class GameManager : MonoBehaviour
         {
             Debug.Log("BOARD COORDINATES: " + boardGrid.GetCellCenterWorld(boardGrid.WorldToCell(cellIndicator.transform.position)));
         }
+
+
+        if(Input.GetKey(KeyCode.Space))
+        {
+            powerUp(0);
+        }
+
 
         //If the player clicks on the board, move the checker to that position if this is a valid checker
         if (Input.GetMouseButtonDown(0) && rayBoard && canMove && checkerIsActive)
@@ -132,16 +149,16 @@ public class GameManager : MonoBehaviour
                 activeChecker.gameObject.transform.position = new Vector3(cellIndicator.transform.position.x + 5f, cellIndicator.transform.position.y, cellIndicator.transform.position.z + 5f);
             }
             gridManager.updateGridValue(boardToGrid(activeChecker.transform.position.z), boardToGrid(activeChecker.transform.position.x), 'P');
-            
+            canTeleport = false;
            
 
             
 
             //We need to check if the placed checker's position is in the final row, in which case, it needs to be kinged
-            if (boardToGrid(activeChecker.transform.position.z) == rowCount - 1)
-            {
-                activeChecker.IsKing = true;
-            }
+            //if (boardToGrid(activeChecker.transform.position.z) == rowCount - 1)
+          //  {
+            //    activeChecker.IsKing = true;
+           // }
 
             if (adjustTurnCount(boardToGrid(activeChecker.transform.position.z), boardToGrid(activeChecker.transform.position.x)))
             {
@@ -199,7 +216,14 @@ public class GameManager : MonoBehaviour
 
             char cellInhabitant = gridManager.getGridValue(boardToGrid(temp.z + 5f), boardToGrid(temp.x + 5f));
 
-            if (cellInhabitant == 'P') {  activeChecker = playerCheckers[""+ boardToGrid(temp.z + 5f) + "" + boardToGrid(temp.x + 5f)]; checkerIsActive = true; }
+            if (cellInhabitant == 'P') 
+            {  activeChecker = playerCheckers[""+ boardToGrid(temp.z + 5f) + "" + boardToGrid(temp.x + 5f)]; checkerIsActive = true; 
+                for (int i = 0; i < powerupButtons.Length; i++) {
+                    string buttonText = powerupButtons[i].gameObject.transform.GetChild(0).gameObject.GetComponent<TMP_Text>().text;
+                    powerupButtons[i].gameObject.transform.GetChild(0).gameObject.GetComponent<TMP_Text>().text = buttonText.Split(":")[0] + ": "+ powerupCounts[i] + " Uses Remaining";
+                        powerupButtons[i].gameObject.SetActive(true); 
+                } 
+            }
            
 
         }
@@ -347,7 +371,15 @@ public class GameManager : MonoBehaviour
     private bool checkMoveLegality(int playerRow, int playerCol, int targetRow, int targetCol, bool kingStatus )
     {
 
+        Debug.Log(kingStatus);
+
         hoppedCoordinate = "";
+
+        if (canTeleport && gridManager.getGridValue(targetRow, targetCol) != 'X')
+        {
+            return true;
+        }
+
         //If the chosen checker is not a king, then we can immediately flag it as invalid if the chosen spot is behind
         if (!kingStatus && targetRow < playerRow) return false;
         //Debug.Log(targetRow + "  " + targetCol + " TEST: " + (playerRow - 1) % 8);
@@ -392,7 +424,7 @@ public class GameManager : MonoBehaviour
         return false;
     }
 
-    /// <summary>
+    /// <summary>  
     /// Converts a coordinate on the board to it's corresponding value in the grid managers 2d array
     /// </summary>
     /// <param name="coordinate">The coordinate we want to convert to array</param>
@@ -435,6 +467,24 @@ public class GameManager : MonoBehaviour
         }
 
         return true;
+    }
+
+    private void powerUp(int powerUpIndex)
+    {
+        if (powerupCounts[powerUpIndex] == 0) { return; }
+        Debug.Log(powerUpIndex);
+        powerupCounts[powerUpIndex]--;
+        string buttonText = powerupButtons[powerUpIndex].gameObject.transform.GetChild(0).gameObject.GetComponent<TMP_Text>().text;
+        powerupButtons[powerUpIndex].gameObject.transform.GetChild(0).gameObject.GetComponent<TMP_Text>().text = buttonText.Split(":")[0] + ": " + powerupCounts[powerUpIndex] + " Uses Remaining";
+        switch (powerUpIndex)
+        {
+            case 0:
+                activeChecker.IsKing = true; break;
+                
+            case 1:
+                canTeleport = true; break;
+
+        }
     }
 
 }
