@@ -309,8 +309,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -845, y: 297}
-  m_SizeDelta: {x: 160, y: 30}
+  m_AnchoredPosition: {x: -840.1, y: 262.3153}
+  m_SizeDelta: {x: 160, y: 99.3693}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &415498831
 MonoBehaviour:
@@ -708,7 +708,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Teleport
+  m_text: 'Teleport: 0 Remaining Uses'
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -1300,7 +1300,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: King Me
+  m_text: 'King Me: '
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
   m_sharedMaterial: {fileID: 2180264, guid: 8f586378b4e144a9851e7b34d9b748ee, type: 2}
@@ -1608,8 +1608,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: -841, y: 360}
-  m_SizeDelta: {x: 160, y: 30}
+  m_AnchoredPosition: {x: -841, y: 364.3}
+  m_SizeDelta: {x: 160, y: 84.0979}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1971316117
 MonoBehaviour:
