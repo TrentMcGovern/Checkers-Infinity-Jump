@@ -1165,6 +1165,11 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1369227124}
   m_CullTransparentMesh: 1
+--- !u!1 &1379509343 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 7427516431900773734, guid: e9110d8f9ca385145944ec9d77e0b70f, type: 3}
+  m_PrefabInstance: {fileID: 3100250513611440857}
+  m_PrefabAsset: {fileID: 0}
 --- !u!114 &1417511926 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 1375471075301050290, guid: 5b0582266c870754e99e51713acbc54c, type: 3}
@@ -1232,6 +1237,7 @@ MonoBehaviour:
   - {fileID: 1971316117}
   checkerPrefab: {fileID: 1417511926}
   hazardPrefab: {fileID: 1549734557}
+  fireHazardPrefab: {fileID: 1379509343}
   activeChecker: {fileID: 0}
   boardGrid: {fileID: 336602387}
   gameCamera: {fileID: 1255040915}
