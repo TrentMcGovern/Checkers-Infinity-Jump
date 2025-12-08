@@ -42,10 +42,12 @@ public class GameManager : MonoBehaviour
     public int powerUpTypeCount=0;
     private int[] powerupCounts;
     public Button[] powerupButtons;
+    
+   
    
     private Dictionary<string, Checker> playerCheckers;
     private Dictionary<string, Checker> enemyCheckers;
-
+    private Dictionary<string, GameObject> fireHazards;
     //Assuming when attempting to move we are primed to hop over another piece, this string will tell us what item we hopped over
     private string hoppedCoordinate = "";
 
@@ -55,7 +57,8 @@ public class GameManager : MonoBehaviour
     [SerializeField]
     public GameObject hazardPrefab;
 
-  
+    [SerializeField]
+    public GameObject fireHazardPrefab;
 
 
     //The checker the player currently wants to move
@@ -86,6 +89,7 @@ public class GameManager : MonoBehaviour
         columnCount = gridManager.getDimensions().col;
         playerCheckers = new Dictionary<string, Checker>();
         enemyCheckers = new Dictionary<string, Checker>();
+        fireHazards = new Dictionary<string, GameObject>(); 
         health = 3;
         turns = 50;
         powerupCounts = new int[powerUpTypeCount];
@@ -93,7 +97,7 @@ public class GameManager : MonoBehaviour
         healthText.text = "Health: " + health;
         turnsText.text = "Turns: " + turns;
 
-         Debug.Log(playerCheckers.Count);
+        Debug.Log(playerCheckers.Count);
         createBoard();
         for (int i = 0; i < powerupButtons.Length; i++) { int capturedIterator = i; powerupCounts[capturedIterator] = 1; powerupButtons[capturedIterator].onClick.AddListener(()=>powerUp(capturedIterator)); powerupButtons[capturedIterator].gameObject.SetActive(false); }
     }
@@ -137,12 +141,60 @@ public class GameManager : MonoBehaviour
 
             
             gridManager.updateGridValue(boardToGrid(activeChecker.transform.position.z), boardToGrid(activeChecker.transform.position.x), '0');
-            Debug.Log("GAMER: " + boardToGrid(cellIndicator.transform.position.z))
-;            if (gridManager.getGridValue(boardToGrid(cellIndicator.transform.position.z+5f), boardToGrid(cellIndicator.transform.position.x + 5f)) == 'H')
+            //Debug.Log("GAMER: " + boardToGrid(cellIndicator.transform.position.z))
+;            if (gridManager.getGridValue(boardToGrid(cellIndicator.transform.position.z + 5f), boardToGrid(cellIndicator.transform.position.x + 5f)) == 'H')
             {
                 health--;
                 healthText.text = "Health: " + health;
                 activeChecker.gameObject.transform.position = new Vector3((activeChecker.originalCol + 1) * 10 + 5, 0, (activeChecker.originalRow + 1) * 10 + 5);
+            }
+            else if (gridManager.getGridValue(boardToGrid(cellIndicator.transform.position.z + 5f), boardToGrid(cellIndicator.transform.position.x + 5f)) == 'F') 
+            {
+                int row = boardToGrid(cellIndicator.transform.position.z + 5f);
+                int col = boardToGrid(cellIndicator.transform.position.x + 5f);
+
+                int rowLowerBound = Math.Max( (row - 4), 0);
+                int colLowerBound = Math.Max((col - 4), 0);
+                int rowUpperBound = Math.Min((row + 4), rowCount-1);
+                int colUpperBound = Math.Min((col + 4), columnCount - 1);
+
+                Debug.Log("Row Lower: " + rowLowerBound + "Col Lower:  " + colLowerBound + "Row Upper: " + rowUpperBound + "Col Upper: " + colUpperBound);
+                System.Random random = new System.Random();
+
+                int randRow = random.Next(rowLowerBound, rowUpperBound);
+                int randCol = random.Next(colLowerBound, colUpperBound);
+                if(randCol %2 == randRow % 2)
+                {
+                    randCol = randCol == 0 ? randCol+1 : randCol-1;
+                }
+                Debug.Log("Row: " + randRow + "Col:  " + randCol );
+                if (gridManager.getGridValue(randRow, randCol) != '0') 
+                {
+                    Debug.Log(gridManager.getGridValue(boardToGrid(cellIndicator.transform.position.z + 5f), boardToGrid(cellIndicator.transform.position.x + 5f)));
+                    randRow = activeChecker.originalRow ; randCol = activeChecker.originalCol ;
+                }
+
+                if (randCol == col + 2 && randRow == row + 2)
+                {
+                    if (gridManager.getGridValue(row + 1,col + 1) == 'X')  { hoppedCoordinate = (row + 1) + "" + (col + 1) + "";  }
+                }
+                if (randCol == col + 2 && randRow == row - 2)
+                {
+                    if (gridManager.getGridValue(row - 1, col + 1) == 'X') { hoppedCoordinate = (row - 1) + "" + (col + 1) + ""; }
+                }
+                if (randCol == col - 2 && randRow == row + 2)
+                {
+                    if (gridManager.getGridValue(row + 1, col - 1) == 'X') { hoppedCoordinate = (row + 1) + "" + (col - 1) + ""; }
+                }
+                if (randCol == col - 2 && randRow == row - 2)
+                {
+                    if (gridManager.getGridValue(row - 1, col - 1) == 'X') { hoppedCoordinate = (row - 1) + "" + (col - 1) + ""; }
+                }
+
+                activeChecker.gameObject.transform.position = new Vector3((randCol + 1) * 10 + 5, 0, (randRow + 1) * 10 + 5);
+                gridManager.updateGridValue(boardToGrid(cellIndicator.transform.position.z + 5f), boardToGrid(cellIndicator.transform.position.x + 5f), '0');
+                Destroy(fireHazards[boardToGrid(cellIndicator.transform.position.z + 5f)+""+ boardToGrid(cellIndicator.transform.position.x + 5f)+""].gameObject);
+                fireHazards.Remove(boardToGrid(cellIndicator.transform.position.z + 5f) + "" + boardToGrid(cellIndicator.transform.position.x + 5f) + "");
             }
             else
             {
@@ -345,10 +397,12 @@ public class GameManager : MonoBehaviour
                 {
                     Debug.Log("H");
                     Instantiate(hazardPrefab, new Vector3((j + 1) * 10+5 , 5, (i + 1) * 10+5 ), hazardPrefab.transform.rotation);
-                    
-                    
+                }
 
-
+                if ( gridItem == 'F')
+                {
+                    Debug.Log("F");
+                    fireHazards.Add(("" + i) + ("" + j), Instantiate(fireHazardPrefab, new Vector3((j + 1) * 10 + 5, 5, (i + 1) * 10 + 5), fireHazardPrefab.transform.rotation));
                 }
 
             }
@@ -371,7 +425,7 @@ public class GameManager : MonoBehaviour
     private bool checkMoveLegality(int playerRow, int playerCol, int targetRow, int targetCol, bool kingStatus )
     {
 
-        Debug.Log(kingStatus);
+    
 
         hoppedCoordinate = "";
 
