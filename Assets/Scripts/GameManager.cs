@@ -11,6 +11,8 @@ using NUnit.Framework.Constraints;
 public class GameManager : MonoBehaviour
 {
 
+    private bool endDemo = false;
+
     //int to track the player health
     public int health;
     public TMP_Text healthText;
@@ -42,8 +44,17 @@ public class GameManager : MonoBehaviour
     public int powerUpTypeCount=0;
     private int[] powerupCounts;
     public Button[] powerupButtons;
-    
-   
+
+    [SerializeField]
+    public int[] turnsData;
+    public int[] healthData;
+    //Will improve later
+    public string[] levelTextArray;
+    public TMP_Text  levelText;
+
+
+    public int levelCount = 7;
+    public int currentLevel = 0;
    
     private Dictionary<string, Checker> playerCheckers;
     private Dictionary<string, Checker> enemyCheckers;
@@ -78,28 +89,29 @@ public class GameManager : MonoBehaviour
     [Tooltip("The primary plane representing the board")]
     [SerializeField]
     private LayerMask boardPlaneLayer;
-
-  
+    private bool enablePowerUps = false;
+    private bool updating = false;
 
     void Start()
     {
         gridManager = new GridManager();
-        gridManager.readCSV("CheckerGrid.csv");
+        gridManager.readCSV("CheckerGrid_" + currentLevel +".csv");
         rowCount = gridManager.getDimensions().row;
         columnCount = gridManager.getDimensions().col;
         playerCheckers = new Dictionary<string, Checker>();
         enemyCheckers = new Dictionary<string, Checker>();
         fireHazards = new Dictionary<string, GameObject>(); 
         health = 3;
-        turns = 50;
+        turns = 4;
         powerupCounts = new int[powerUpTypeCount];
 
         healthText.text = "Health: " + health;
         turnsText.text = "Turns: " + turns;
-
+        healthText.gameObject.SetActive(false);
         Debug.Log(playerCheckers.Count);
         createBoard();
-        for (int i = 0; i < powerupButtons.Length; i++) { int capturedIterator = i; powerupCounts[capturedIterator] = 1; powerupButtons[capturedIterator].onClick.AddListener(()=>powerUp(capturedIterator)); powerupButtons[capturedIterator].gameObject.SetActive(false); }
+        levelText.text = "LEVEL " + (int)(currentLevel+1) + ":\n" + levelTextArray[currentLevel];
+        for (int i = 0; i < powerupButtons.Length; i++) { int capturedIterator = i; powerupCounts[capturedIterator] = 0; powerupButtons[capturedIterator].onClick.AddListener(()=>powerUp(capturedIterator)); powerupButtons[capturedIterator].gameObject.SetActive(false); }
     }
 
 
@@ -107,185 +119,149 @@ public class GameManager : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-
-        if (enemyCheckers.Count == 0) {
-
-            SceneManager.LoadScene(1);
-        }
-
-        if (turns == 0 || health == 0)
+        if (!updating)
         {
+            //Debug.Log("LEVEL: " + currentLevel);
 
-            SceneManager.LoadScene(2);
-        }
+          
 
-        //Press Escape to exit
-        if (Input.GetKeyDown(KeyCode.Escape)) Application.Quit();
-
-        //If statement that tells you the coordinate you picked (primarily for bug testing)
-        if (Input.GetMouseButtonDown(0))
-        {
-            Debug.Log("BOARD COORDINATES: " + boardGrid.GetCellCenterWorld(boardGrid.WorldToCell(cellIndicator.transform.position)));
-        }
-
-
-        if(Input.GetKey(KeyCode.Space))
-        {
-            powerUp(0);
-        }
-
-
-        //If the player clicks on the board, move the checker to that position if this is a valid checker
-        if (Input.GetMouseButtonDown(0) && rayBoard && canMove && checkerIsActive)
-        {
-
-            
-            gridManager.updateGridValue(boardToGrid(activeChecker.transform.position.z), boardToGrid(activeChecker.transform.position.x), '0');
-            //Debug.Log("GAMER: " + boardToGrid(cellIndicator.transform.position.z))
-;            if (gridManager.getGridValue(boardToGrid(cellIndicator.transform.position.z + 5f), boardToGrid(cellIndicator.transform.position.x + 5f)) == 'H')
+            if (turns == 0 || health == 0)
             {
-                health--;
-                healthText.text = "Health: " + health;
-                activeChecker.gameObject.transform.position = new Vector3((activeChecker.originalCol + 1) * 10 + 5, 0, (activeChecker.originalRow + 1) * 10 + 5);
+
+                SceneManager.LoadScene(2);
             }
-            else if (gridManager.getGridValue(boardToGrid(cellIndicator.transform.position.z + 5f), boardToGrid(cellIndicator.transform.position.x + 5f)) == 'F') 
+
+            //Press Escape to exit
+            if (Input.GetKeyDown(KeyCode.Escape)) Application.Quit();
+
+            //If statement that tells you the coordinate you picked (primarily for bug testing)
+            if (Input.GetMouseButtonDown(0) && endDemo)
             {
-                int row = boardToGrid(cellIndicator.transform.position.z + 5f);
-                int col = boardToGrid(cellIndicator.transform.position.x + 5f);
+                //Debug.Log("BOARD COORDINATES: " + boardGrid.GetCellCenterWorld(boardGrid.WorldToCell(cellIndicator.transform.position)));
+                SceneManager.LoadScene(1);
+                return;
+            }
 
-                int rowLowerBound = Math.Max( (row - 4), 0);
-                int colLowerBound = Math.Max((col - 4), 0);
-                int rowUpperBound = Math.Min((row + 4), rowCount-1);
-                int colUpperBound = Math.Min((col + 4), columnCount - 1);
 
-                Debug.Log("Row Lower: " + rowLowerBound + "Col Lower:  " + colLowerBound + "Row Upper: " + rowUpperBound + "Col Upper: " + colUpperBound);
-                System.Random random = new System.Random();
+            if (Input.GetKey(KeyCode.Space))
+            {
+                powerUp(0);
+            }
 
-                int randRow = random.Next(rowLowerBound, rowUpperBound);
-                int randCol = random.Next(colLowerBound, colUpperBound);
-                if(randCol %2 == randRow % 2)
+
+            //If the player clicks on the board, move the checker to that position if this is a valid checker
+            if (Input.GetMouseButtonDown(0) && rayBoard && canMove && checkerIsActive)
+            {
+
+
+                gridManager.updateGridValue(boardToGrid(activeChecker.transform.position.z), boardToGrid(activeChecker.transform.position.x), '0');
+                //Debug.Log("GAMER: " + boardToGrid(cellIndicator.transform.position.z))
+                ; if (gridManager.getGridValue(boardToGrid(cellIndicator.transform.position.z + 5f), boardToGrid(cellIndicator.transform.position.x + 5f)) == 'H')
                 {
-                    randCol = randCol == 0 ? randCol+1 : randCol-1;
+                    health--;
+                    healthText.text = "Health: " + health;
+                    activeChecker.gameObject.transform.position = new Vector3((activeChecker.originalCol + 1) * 10 + 5, 0, (activeChecker.originalRow + 1) * 10 + 5);
                 }
-                Debug.Log("Row: " + randRow + "Col:  " + randCol );
-                if (gridManager.getGridValue(randRow, randCol) != '0') 
+                else if (gridManager.getGridValue(boardToGrid(cellIndicator.transform.position.z + 5f), boardToGrid(cellIndicator.transform.position.x + 5f)) == 'F')
                 {
-                    Debug.Log(gridManager.getGridValue(boardToGrid(cellIndicator.transform.position.z + 5f), boardToGrid(cellIndicator.transform.position.x + 5f)));
-                    randRow = activeChecker.originalRow ; randCol = activeChecker.originalCol ;
-                }
+                    int row = boardToGrid(cellIndicator.transform.position.z + 5f);
+                    int col = boardToGrid(cellIndicator.transform.position.x + 5f);
 
-                if (randCol == col + 2 && randRow == row + 2)
+                    int rowLowerBound = Math.Max((row - 2), 0);
+                    int colLowerBound = Math.Max((col - 2), 0);
+                    int rowUpperBound = Math.Min((row + 2), rowCount - 1);
+                    int colUpperBound = Math.Min((col + 2), columnCount - 1);
+
+                    Debug.Log("Row Lower: " + rowLowerBound + "Col Lower:  " + colLowerBound + "Row Upper: " + rowUpperBound + "Col Upper: " + colUpperBound);
+                    System.Random random = new System.Random();
+
+                    int randRow = random.Next(rowLowerBound, rowUpperBound);
+                    int randCol = random.Next(colLowerBound, colUpperBound);
+                    if (randCol % 2 == randRow % 2)
+                    {
+                        randCol = randCol == 0 ? randCol + 1 : randCol - 1;
+                    }
+                    Debug.Log("Row: " + randRow + "Col:  " + randCol);
+                    if (gridManager.getGridValue(randRow, randCol) != '0')
+                    {
+                        Debug.Log(gridManager.getGridValue(boardToGrid(cellIndicator.transform.position.z + 5f), boardToGrid(cellIndicator.transform.position.x + 5f)));
+                        randRow = activeChecker.originalRow; randCol = activeChecker.originalCol;
+                    }
+
+                    if (randCol == col + 2 && randRow == row + 2)
+                    {
+                        if (gridManager.getGridValue(row + 1, col + 1) == 'X') { hoppedCoordinate = (row + 1) + "" + (col + 1) + ""; }
+                    }
+                    if (randCol == col + 2 && randRow == row - 2)
+                    {
+                        if (gridManager.getGridValue(row - 1, col + 1) == 'X') { hoppedCoordinate = (row - 1) + "" + (col + 1) + ""; }
+                    }
+                    if (randCol == col - 2 && randRow == row + 2)
+                    {
+                        if (gridManager.getGridValue(row + 1, col - 1) == 'X') { hoppedCoordinate = (row + 1) + "" + (col - 1) + ""; }
+                    }
+                    if (randCol == col - 2 && randRow == row - 2)
+                    {
+                        if (gridManager.getGridValue(row - 1, col - 1) == 'X') { hoppedCoordinate = (row - 1) + "" + (col - 1) + ""; }
+                    }
+
+                    activeChecker.gameObject.transform.position = new Vector3((randCol + 1) * 10 + 5, 0, (randRow + 1) * 10 + 5);
+                    gridManager.updateGridValue(boardToGrid(cellIndicator.transform.position.z + 5f), boardToGrid(cellIndicator.transform.position.x + 5f), '0');
+                    Destroy(fireHazards[boardToGrid(cellIndicator.transform.position.z + 5f) + "" + boardToGrid(cellIndicator.transform.position.x + 5f) + ""].gameObject);
+                    fireHazards.Remove(boardToGrid(cellIndicator.transform.position.z + 5f) + "" + boardToGrid(cellIndicator.transform.position.x + 5f) + "");
+                }
+                else
                 {
-                    if (gridManager.getGridValue(row + 1,col + 1) == 'X')  { hoppedCoordinate = (row + 1) + "" + (col + 1) + "";  }
+                    activeChecker.gameObject.transform.position = new Vector3(cellIndicator.transform.position.x + 5f, cellIndicator.transform.position.y, cellIndicator.transform.position.z + 5f);
                 }
-                if (randCol == col + 2 && randRow == row - 2)
+                gridManager.updateGridValue(boardToGrid(activeChecker.transform.position.z), boardToGrid(activeChecker.transform.position.x), 'P');
+                canTeleport = false;
+
+
+
+
+                //We need to check if the placed checker's position is in the final row, in which case, it needs to be kinged
+                if (boardToGrid(activeChecker.transform.position.z) == rowCount - 1)
                 {
-                    if (gridManager.getGridValue(row - 1, col + 1) == 'X') { hoppedCoordinate = (row - 1) + "" + (col + 1) + ""; }
+                    activeChecker.IsKing = true;
                 }
-                if (randCol == col - 2 && randRow == row + 2)
+                if (adjustTurnCount(boardToGrid(activeChecker.transform.position.z), boardToGrid(activeChecker.transform.position.x)))
                 {
-                    if (gridManager.getGridValue(row + 1, col - 1) == 'X') { hoppedCoordinate = (row + 1) + "" + (col - 1) + ""; }
+                    turns--;
+                    turnsText.text = "Turns: " + turns;
                 }
-                if (randCol == col - 2 && randRow == row - 2)
+
+                
+
+                if (hoppedCoordinate != "")
                 {
-                    if (gridManager.getGridValue(row - 1, col - 1) == 'X') { hoppedCoordinate = (row - 1) + "" + (col - 1) + ""; }
+                   
+                    Debug.Log("HOPPED: "+ hoppedCoordinate);
+                    gridManager.updateGridValue((int)(hoppedCoordinate[0] - '0'), (int)(hoppedCoordinate[1] - '0'), '0');
+                    Destroy(enemyCheckers[hoppedCoordinate].gameObject);
+                    enemyCheckers.Remove(hoppedCoordinate);
+                    hoppedCoordinate = "";
+                }
+                //We need to check if the placed checker's position is in the final row, in which case, it needs to be kinged
+              
+
+                if (enemyCheckers.Count == 0)
+                {
+                    
+                    Debug.Log("NEXT");
+                    nextLevel();
+                    
+
                 }
 
-                activeChecker.gameObject.transform.position = new Vector3((randCol + 1) * 10 + 5, 0, (randRow + 1) * 10 + 5);
-                gridManager.updateGridValue(boardToGrid(cellIndicator.transform.position.z + 5f), boardToGrid(cellIndicator.transform.position.x + 5f), '0');
-                Destroy(fireHazards[boardToGrid(cellIndicator.transform.position.z + 5f)+""+ boardToGrid(cellIndicator.transform.position.x + 5f)+""].gameObject);
-                fireHazards.Remove(boardToGrid(cellIndicator.transform.position.z + 5f) + "" + boardToGrid(cellIndicator.transform.position.x + 5f) + "");
+
+
             }
-            else
+
+            //If the player clicks the board when there is no active checker, check if they are clicking on a checker
+            if (Input.GetMouseButtonDown(0) && !checkerIsActive)
             {
-                activeChecker.gameObject.transform.position = new Vector3(cellIndicator.transform.position.x + 5f, cellIndicator.transform.position.y, cellIndicator.transform.position.z + 5f);
-            }
-            gridManager.updateGridValue(boardToGrid(activeChecker.transform.position.z), boardToGrid(activeChecker.transform.position.x), 'P');
-            canTeleport = false;
-           
 
-            
-
-            //We need to check if the placed checker's position is in the final row, in which case, it needs to be kinged
-            //if (boardToGrid(activeChecker.transform.position.z) == rowCount - 1)
-          //  {
-            //    activeChecker.IsKing = true;
-           // }
-
-            if (adjustTurnCount(boardToGrid(activeChecker.transform.position.z), boardToGrid(activeChecker.transform.position.x)))
-            {
-                turns--;
-                turnsText.text = "Turns: " + turns;
-            }
-
-            if (hoppedCoordinate != "")
-            {
-                Debug.Log(hoppedCoordinate);
-                gridManager.updateGridValue((int)(hoppedCoordinate[0] - '0'), (int)(hoppedCoordinate[1] - '0'), '0');
-                Destroy(enemyCheckers[hoppedCoordinate].gameObject);
-                enemyCheckers.Remove(hoppedCoordinate);
-                hoppedCoordinate = "";
-            }
-            //We need to check if the placed checker's position is in the final row, in which case, it needs to be kinged
-            if (boardToGrid(activeChecker.transform.position.z) == rowCount-1)
-            {
-                activeChecker.IsKing = true;
-            }
-           
-
-           
-        }
-
-        //If the player clicks the board when there is no active checker, check if they are clicking on a checker
-        if (Input.GetMouseButtonDown(0) && !checkerIsActive)
-        {
-            
-            Vector3 mousePosition = calculateWorldMousePosition();
-            Vector3 temp = boardGrid.CellToWorld(Vector3Int.FloorToInt(boardGrid.WorldToCell(mousePosition)));
-            if (temp.x < 0)
-            {
-                temp.x = temp.x * -1;
-                temp.x = (int)(temp.x / 10);
-                temp.x = temp.x * 10 * -1;
-            }
-            else
-            {
-                temp.x = (int)(temp.x / 10);
-                temp.x = temp.x * 10;
-            }
-
-            if (temp.z < 0)
-            {
-                temp.z = temp.z * -1;
-                temp.z = (int)(temp.z / 10);
-                temp.z = temp.z * 10 * -1;
-            }
-            else
-            {
-                temp.z = (int)(temp.z / 10);
-                temp.z = temp.z * 10;
-            }
-
-            char cellInhabitant = gridManager.getGridValue(boardToGrid(temp.z + 5f), boardToGrid(temp.x + 5f));
-
-            if (cellInhabitant == 'P') 
-            {  activeChecker = playerCheckers[""+ boardToGrid(temp.z + 5f) + "" + boardToGrid(temp.x + 5f)]; checkerIsActive = true; 
-                for (int i = 0; i < powerupButtons.Length; i++) {
-                    string buttonText = powerupButtons[i].gameObject.transform.GetChild(0).gameObject.GetComponent<TMP_Text>().text;
-                    powerupButtons[i].gameObject.transform.GetChild(0).gameObject.GetComponent<TMP_Text>().text = buttonText.Split(":")[0] + ": "+ powerupCounts[i] + " Uses Remaining";
-                        powerupButtons[i].gameObject.SetActive(true); 
-                } 
-            }
-           
-
-        }
-
-
-        //This chunk of code will make the cell indicator (the colored square indicating which spot on the board you are hovering over) follow the players mouse
-        {
-
-            if (checkerIsActive)
-            {
                 Vector3 mousePosition = calculateWorldMousePosition();
                 Vector3 temp = boardGrid.CellToWorld(Vector3Int.FloorToInt(boardGrid.WorldToCell(mousePosition)));
                 if (temp.x < 0)
@@ -311,28 +287,79 @@ public class GameManager : MonoBehaviour
                     temp.z = (int)(temp.z / 10);
                     temp.z = temp.z * 10;
                 }
-                cellIndicator.transform.position = new Vector3(temp.x, temp.y, temp.z);
-            }
-        }
-        //___________________________________________________________________________________________________________
 
-        //This if statement will check if the cell the player is hovering over is a cell they can move to, and adjust the indicator color accordingly
-        if (checkerIsActive)
-        {
-            
-            if (checkMoveLegality(boardToGrid(activeChecker.gameObject.transform.position.z), boardToGrid(activeChecker.gameObject.transform.position.x), boardToGrid(cellIndicator.transform.position.z + 5f), boardToGrid(cellIndicator.transform.position.x + 5f), activeChecker.IsKing ))
-            {
-                cellIndicator.transform.GetChild(0).gameObject.GetComponent<Renderer>().material.color = Color.green;
-                canMove = true;
+                char cellInhabitant = gridManager.getGridValue(boardToGrid(temp.z + 5f), boardToGrid(temp.x + 5f));
+
+                if (cellInhabitant == 'P')
+                {
+                    activeChecker = playerCheckers["" + boardToGrid(temp.z + 5f) + "" + boardToGrid(temp.x + 5f)]; checkerIsActive = true;
+                    if (enablePowerUps)
+                    {
+                        for (int i = 0; i < powerupButtons.Length; i++)
+                        {
+                            string buttonText = powerupButtons[i].gameObject.transform.GetChild(0).gameObject.GetComponent<TMP_Text>().text;
+                            powerupButtons[i].gameObject.transform.GetChild(0).gameObject.GetComponent<TMP_Text>().text = buttonText.Split(":")[0] + ": " + powerupCounts[i] + " Uses Remaining";
+                            powerupButtons[i].gameObject.SetActive(true);
+                        }
+                    }
+                }
+
+              
             }
-            else
+
+
+            //This chunk of code will make the cell indicator (the colored square indicating which spot on the board you are hovering over) follow the players mouse
             {
-                cellIndicator.transform.GetChild(0).gameObject.GetComponent<Renderer>().material.color = Color.red;
-                canMove = false;
+
+                if (checkerIsActive)
+                {
+                    Vector3 mousePosition = calculateWorldMousePosition();
+                    Vector3 temp = boardGrid.CellToWorld(Vector3Int.FloorToInt(boardGrid.WorldToCell(mousePosition)));
+                    if (temp.x < 0)
+                    {
+                        temp.x = temp.x * -1;
+                        temp.x = (int)(temp.x / 10);
+                        temp.x = temp.x * 10 * -1;
+                    }
+                    else
+                    {
+                        temp.x = (int)(temp.x / 10);
+                        temp.x = temp.x * 10;
+                    }
+
+                    if (temp.z < 0)
+                    {
+                        temp.z = temp.z * -1;
+                        temp.z = (int)(temp.z / 10);
+                        temp.z = temp.z * 10 * -1;
+                    }
+                    else
+                    {
+                        temp.z = (int)(temp.z / 10);
+                        temp.z = temp.z * 10;
+                    }
+                    cellIndicator.transform.position = new Vector3(temp.x, temp.y, temp.z);
+                }
+            }
+            //___________________________________________________________________________________________________________
+
+            //This if statement will check if the cell the player is hovering over is a cell they can move to, and adjust the indicator color accordingly
+            if (checkerIsActive)
+            {
+
+                if (checkMoveLegality(boardToGrid(activeChecker.gameObject.transform.position.z), boardToGrid(activeChecker.gameObject.transform.position.x), boardToGrid(cellIndicator.transform.position.z + 5f), boardToGrid(cellIndicator.transform.position.x + 5f), activeChecker.IsKing))
+                {
+                    cellIndicator.transform.GetChild(0).gameObject.GetComponent<Renderer>().material.color = Color.green;
+                    canMove = true;
+                }
+                else
+                {
+                    cellIndicator.transform.GetChild(0).gameObject.GetComponent<Renderer>().material.color = Color.red;
+                    canMove = false;
+                }
             }
         }
     }
-
     /// <summary>
     /// Convert the position of the mouse on screen to a position in the worldspace
     /// </summary>
@@ -372,7 +399,7 @@ public class GameManager : MonoBehaviour
             for (int j = 0; j < columnCount; j++)
             {
                 char gridItem = gridManager.getGridValue(i, j);
-                Debug.Log(gridItem);
+                //Debug.Log(gridItem);
                 if (gridItem == 'P')
                 {
                     Debug.Log("P");
@@ -396,19 +423,89 @@ public class GameManager : MonoBehaviour
                 if (gridItem == 'H')
                 {
                     Debug.Log("H");
-                    Instantiate(hazardPrefab, new Vector3((j + 1) * 10+5 , 5, (i + 1) * 10+5 ), hazardPrefab.transform.rotation);
+                    fireHazards.Add(("" + i) + ("" + j), Instantiate(hazardPrefab, new Vector3((j + 1) * 10+5 , 5, (i + 1) * 10+5 ), hazardPrefab.transform.rotation));
                 }
 
                 if ( gridItem == 'F')
                 {
                     Debug.Log("F");
                     fireHazards.Add(("" + i) + ("" + j), Instantiate(fireHazardPrefab, new Vector3((j + 1) * 10 + 5, 5, (i + 1) * 10 + 5), fireHazardPrefab.transform.rotation));
+
                 }
 
             }
 
         }
 
+
+    }
+
+    private void clearBoard()
+    {
+
+        Destroy(activeChecker.gameObject);
+        foreach(string key in playerCheckers.Keys)
+        {
+            Destroy(playerCheckers[key]);
+            
+        }
+        playerCheckers.Clear();
+        foreach (string key in enemyCheckers.Keys)
+        {
+            Destroy(enemyCheckers[key]);
+            
+        }
+        enemyCheckers.Clear ();
+        foreach (string key in fireHazards.Keys)
+        {
+            Destroy(fireHazards[key]);
+            
+        }
+        fireHazards.Clear ();
+
+        
+
+
+        for (int i = 0; i < rowCount; i++)
+        {
+            for (int j = 0; j < columnCount; j++)
+            {
+                gridManager.updateGridValue(i, j, '0');
+            }
+
+        }
+
+    }
+
+    private void nextLevel()
+    {
+        updating = true;
+        Debug.Log("Current LEVEL: " + currentLevel);
+        currentLevel=currentLevel+1;
+        if(currentLevel == levelCount-1) { endDemo = true; }
+        clearBoard();
+        gridManager.readCSV("CheckerGrid_" + currentLevel + ".csv");
+        rowCount = gridManager.getDimensions().row;
+        columnCount = gridManager.getDimensions().col;
+        health = healthData[currentLevel];
+        turns = turnsData[currentLevel];
+        healthText.text = "Health: " + health;
+        turnsText.text = "Turns: " + turns;
+        
+
+        if(currentLevel >1) { 
+        healthText.gameObject.SetActive(true);
+        }
+        if (currentLevel > 3)
+        {
+           enablePowerUps=true;
+        }
+        createBoard();
+        cellIndicator.transform.position = new Vector3(-10, 0, -10);
+        levelText.text = "LEVEL " + (int)(currentLevel + 1) + ":\n" + levelTextArray[currentLevel];
+        checkerIsActive = false;
+        if (enablePowerUps) { for (int i = 0; i < powerupCounts.Length; i++) { powerupCounts[i]++; powerupButtons[i].gameObject.SetActive(false); } }
+        updating = false;
 
     }
 

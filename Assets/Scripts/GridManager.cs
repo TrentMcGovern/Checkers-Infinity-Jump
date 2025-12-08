@@ -51,7 +51,7 @@ public class GridManager
 
             //Debug.Log("ROW: "+rowIndex);
             //Debug.Log("COL: " + columnIndex);
-            int loopcount = 0;
+            //int loopcount = 0;
             //while (!reader.EndOfStream)
             //{
                 
@@ -75,12 +75,12 @@ public class GridManager
                         }
                       
                   
-                        Debug.Log("Coordinates: (" + i + ", "+ j+ "): " + gridMap[i, j]);
+                        //Debug.Log("Coordinates: (" + i + ", "+ j+ "): " + gridMap[i, j]);
                     }
                 }
-                loopcount++;
+                //loopcount++;
             //}
-            Debug.Log(loopcount);
+            
             
 
         }
